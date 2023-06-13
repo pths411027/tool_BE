@@ -1,0 +1,16 @@
+version: "3"
+services:
+  api:
+    container_name: 'my-tool-BE'
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8550:8080"
+    environment:
+      - TZ=Asia/Taipei
+    command: 
+      - /bin/sh
+      - -c
+      - /code/entrypoint.sh
+    restart: unless-stopped

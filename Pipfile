@@ -1,0 +1,24 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+fastapi = "*"
+sqlalchemy = "*"
+uvicorn = {extras = ["standard"], version = "*"}
+python-jose = {extras = ["cryptography"], version = "*"}
+pydantic = "*"
+pandas = "==1.4.3"
+openpyxl = "*"
+numpy = "*"
+bcrypt = "*"
+python-multipart = "*"
+
+
+[dev-packages]
+notebook = "*"
+jupyterlab = "*"
+
+[requires]
+python_version = "3.11"
