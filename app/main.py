@@ -2,12 +2,15 @@ from typing import Union
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging.config
+from dotenv import load_dotenv
 from .settings.logging import LOGGING_CONFIG
 logging.config.dictConfig(LOGGING_CONFIG)
 
 from .routers import routers
 app_logger = logging.getLogger('app')
 
+# 設定環境參數
+load_dotenv()
 
 app = FastAPI(debug=True)
 # 設置跨域中間件
