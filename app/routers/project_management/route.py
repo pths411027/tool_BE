@@ -1,6 +1,14 @@
+import os
 from datetime import datetime
-from fastapi import APIRouter, UploadFile, Form, File, Request
+from fastapi import FastAPI, APIRouter, UploadFile, Form, File, Request, HTTPException
 from app.database.sqlite import Session, engine
+import json
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
+app = FastAPI()
 
 
 pm_server_router = APIRouter(tags=["PM Server"], prefix="/pm-server")
@@ -11,11 +19,13 @@ async def pm_server_home():
     return {"pm_server_router": "home"}
 
 from .request_model import AddMainProject
-from app.schemas.PM import MainProject, SubProject
+from app.schemas.PM import MainProject, SubProject, Member
+from app.routers.project_management.BE_tool_func import Send
 
 # add main project
-@pm_server_router.post("/main-project")
+@pm_server_router.post("/add-project")
 async def add_main_project(project_info:AddMainProject):
+    # SQL
     with Session() as session:
         new_main_project = MainProject(
             project_name = project_info.projectName,
@@ -28,7 +38,7 @@ async def add_main_project(project_info:AddMainProject):
         session.add(new_main_project)
         session.flush()  
 
-        # 创建 sub_project 对象
+        # build sub_project object
         for i in project_info.extraInputs:
             new_sub_project = SubProject(
                 parent_pro_id = new_main_project.pro_id,
@@ -38,19 +48,27 @@ async def add_main_project(project_info:AddMainProject):
             )
             session.add(new_sub_project)
         session.commit()
+    # email
+    Send(smtp_host = 'smtp.gmail.com',
+         smtp_port = 587,
+         username = os.environ.get('MARCUS_EMAIL_ACCOUT'),
+         password = os.environ.get('MARCUS_EMAIL_PASSWORD'), 
+         subject = '任務通知', 
+         body = f'{project_info.KYC} 接到新任務：{project_info.projectName}', 
+         email_to = ['marcus.tsai@shopee.com'])
+
     return {"message": "Project added successfully"}
 
 
 
 # show main project
-@pm_server_router.get("/now-main-project")
+@pm_server_router.get("/main-project")
 async def get_main_project_columns():
     color_dict = dict()
     color_dict['CICD'] = 'rgba(30, 123, 162, 0.8)'
     color_dict['FE'] = 'rgba(250, 197, 93, 0.8)'
     color_dict['BE'] = 'rgba(237, 106, 95, 0.8)'
     color_dict['PM'] = 'rgba(169, 209, 142, 0.8)'
-
 
     with Session() as session:
         query = session.query(MainProject.project_name, MainProject.start_day, MainProject.end_day, MainProject.des, MainProject.tag)
@@ -68,9 +86,68 @@ async def get_main_project_columns():
             for result in results
         ]
 
-        # 返回结果
+        # return outcome
         return {"main_projects": data}
-        
 
+
+from .request_model import AddMember
+# add member 
+@pm_server_router.post("/add-member")
+async def add_main_member(member_info:AddMember):
     
-   
+    
+    with Session() as session:
+        new_member = Member(
+            chineseName = member_info.chineseName,
+            englishName = member_info.englishName,
+            email = member_info.email,
+            department = member_info.department,
+            team = member_info.team,
+            level = member_info.level,
+            manager = json.dumps(member_info.manager),
+        )
+        session.add(new_member)
+        session.commit()
+    return {"message": "Member added successfully"}
+
+
+# show member
+import ast
+@pm_server_router.get("/member")
+async def get_member():
+
+    with Session() as session:
+        query = session.query(Member.chineseName , Member.englishName, Member.department, Member.team, Member.manager, Member.level)
+        results = query.all()
+        
+        data = [
+            {
+
+                "chineseName": result.chineseName,
+                "englishName": result.englishName,
+                "department": result.department,
+                "team":  result.team,
+                "manager": ast.literal_eval(result.manager),
+                "level": result.level,
+            }
+            for result in results
+        ]
+
+        # return outcome
+        return {"member": data}
+    
+# show memberList
+@pm_server_router.get("/member-list")
+async def get_member_list():
+
+    with Session() as session:
+        query = session.query(Member.englishName).distinct()
+        results = query.all()
+        
+        data = [
+            result.englishName
+            for result in results
+        ]
+
+        # return outcome
+        return {"member": data}

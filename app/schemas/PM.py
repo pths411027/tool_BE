@@ -13,7 +13,6 @@ class MainProject(Base):
     des = Column(String(255), primary_key=False, index=False)
     start_day = Column(Date, index=False)
     end_day = Column(Date, index=False)
-
     tag = Column(String(255), index=False)
 
 class SubProject(Base):
@@ -23,6 +22,19 @@ class SubProject(Base):
     project_name = Column(String(255), primary_key=False, index=True)
     des = Column(String(255), primary_key=False, index=False)
     tag = Column(String(255), index=False)
-    
+
+class Member(Base):
+    __tablename__ = "member"
+    pro_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    chineseName = Column(String(255), primary_key=False, index=False)
+    englishName = Column(String(255), primary_key=False, index=False)
+    email = Column(String(255), primary_key=False, index=False)
+    department = Column(String(255), primary_key=False, index=False)
+    team = Column(String(255), primary_key=False, index=False)
+    level = Column(String(255), primary_key=False, index=False)
+    manager = Column(String(255), primary_key=False, index=False)
+
+
+
 
    
