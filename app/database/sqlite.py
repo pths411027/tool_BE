@@ -1,10 +1,13 @@
 import sys
 sys.path.append('/Users/marcus.tsai/Desktop/my-tool-BE')
+from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from app.schemas.PM import Base
+
+
+Base = declarative_base()
 engine = create_engine(
-    'sqlite:///PM.db',
+    'sqlite:///Side_Project.db',
     pool_pre_ping=True, 
     pool_recycle=300,
     echo=True

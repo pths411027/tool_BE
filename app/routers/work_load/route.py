@@ -11,20 +11,19 @@ load_dotenv()
 app = FastAPI()
 
 
-pm_server_router = APIRouter(tags=["PM Server"], prefix="/pm-server")
+work_load_router = APIRouter(tags=["Work Load"], prefix="/work_load")
 
 
-
-@pm_server_router.get("/home")
+@work_load_router.get("/home")
 async def pm_server_home():
-    return {"pm_server_router": "home"}
+    return {"work_load_router": "home"}
 
 from .request_model import AddMainProject
 from app.schemas.PM import MainProject, SubProject, Member
 from app.routers.project_management.BE_tool_func import Send
 
 # add main project
-@pm_server_router.post("/add-project")
+@work_load_router.post("/add-project")
 async def add_main_project(project_info:AddMainProject):
     # SQL
     with Session() as session:
@@ -63,7 +62,7 @@ async def add_main_project(project_info:AddMainProject):
 
 
 # show main project
-@pm_server_router.get("/main-project")
+@work_load_router.get("/main-project")
 async def get_main_project_columns():
     color_dict = dict()
     color_dict['CICD'] = 'rgba(30, 123, 162, 0.8)'
@@ -93,7 +92,7 @@ async def get_main_project_columns():
 
 from .request_model import AddMember
 # add member 
-@pm_server_router.post("/add-member")
+@work_load_router.post("/add-member")
 async def add_main_member(member_info:AddMember):
     
     
@@ -114,7 +113,7 @@ async def add_main_member(member_info:AddMember):
 
 # show member
 import ast
-@pm_server_router.get("/member")
+@work_load_router.get("/member")
 async def get_member():
 
     with Session() as session:
@@ -138,7 +137,7 @@ async def get_member():
         return {"member": data}
     
 # show memberList
-@pm_server_router.get("/member-list")
+@work_load_router.get("/member-list")
 async def get_member_list():
 
     with Session() as session:
