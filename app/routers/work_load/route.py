@@ -1,7 +1,9 @@
 import os
+import pandas as pd
 from datetime import datetime
-from fastapi import FastAPI, APIRouter, UploadFile, Form, File, Request, HTTPException
-from app.database.sqlite import Session, engine
+from fastapi import FastAPI, APIRouter, UploadFile, Form, File, Request, HTTPException, Path, Query
+from typing import List
+from app.database.sqlalchemy import Session, engine
 import json
 from dotenv import load_dotenv
 
@@ -18,136 +20,193 @@ work_load_router = APIRouter(tags=["Work Load"], prefix="/work_load")
 async def pm_server_home():
     return {"work_load_router": "home"}
 
+
+from .request_model import AddTeam
+from app.schemas.WL import WLTeam
+
+# add team
+@work_load_router.post("/add_team")
+async def add_team(team_info:AddTeam):
+    print(team_info)
+    with Session() as session:
+        existing_team = session.query(WLTeam).filter_by(teamName=team_info.teamName).first()
+        if existing_team:
+            raise HTTPException(status_code=400, detail="Team already exists")
+        new_team = WLTeam(
+            teamName = team_info.teamName
+        )
+        session.add(new_team)
+        session.commit()
+    return {"message": "Team added successfully"}
+
+
+@work_load_router.get("/team-list")
+async def get_team_list():
+     with Session() as session:
+        query = session.query(WLTeam.teamName)
+        results = query.all()
+        
+        data = [
+            result.teamName
+            for result in results
+        ]
+       
+        print(data)
+        # return outcome
+        return {"team": data}
+
+
+# add team
+from .request_model import AddMember
+from app.schemas.WL import WLMember
+
+@work_load_router.post("/add_member")
+async def add_team(member_info:AddMember):
+    print(member_info)
+    with Session() as session:
+        
+        existing_member = session.query(WLMember).filter_by(englishName=member_info.englishName).first()
+        if existing_member:
+            raise HTTPException(status_code=400, detail="Member already exists")
+        
+        team = session.query(WLTeam).filter_by(teamName=member_info.team).first()
+        if not team:
+            raise HTTPException(status_code=400, detail="Team not found")
+
+        new_member = WLMember(
+            englishName = member_info.englishName,
+            email = member_info.email,
+            team = team.pro_id,
+            level = member_info.level
+        )
+        session.add(new_member)
+        session.commit()
+    return {"message": "Team added successfully"}
+
 from .request_model import AddMainProject
-from app.schemas.PM import MainProject, SubProject, Member
-from app.routers.project_management.BE_tool_func import Send
+from app.schemas.WL import WLMainProject
 
 # add main project
 @work_load_router.post("/add-project")
 async def add_main_project(project_info:AddMainProject):
+    print(project_info)
     # SQL
+    try:
+        project_info.KPI = int(project_info.KPI)
+    except:
+        raise HTTPException(status_code=400, detail="KPI is not int")
+
+    created_time = datetime.now()
     with Session() as session:
-        new_main_project = MainProject(
+        new_main_project = WLMainProject(
             project_name = project_info.projectName,
-            KYC = project_info.KYC,
-            des = project_info.description,
-            start_day = datetime.strptime(project_info.startDay, "%Y-%m-%d").date(),
-            end_day = datetime.strptime(project_info.endDay, "%Y-%m-%d").date(),
-            tag = project_info.tag
+            KPI = int(project_info.KPI),
+            created_time = created_time,
+            updated_time = created_time,
+            team = project_info.team
         )
         session.add(new_main_project)
-        session.flush()  
-
-        # build sub_project object
-        for i in project_info.extraInputs:
-            new_sub_project = SubProject(
-                parent_pro_id = new_main_project.pro_id,
-                project_name = i[0],
-                des = i[1],
-                tag = i[2]
-            )
-            session.add(new_sub_project)
-        session.commit()
-    # email
-    Send(smtp_host = 'smtp.gmail.com',
-         smtp_port = 587,
-         username = os.environ.get('MARCUS_EMAIL_ACCOUT'),
-         password = os.environ.get('MARCUS_EMAIL_PASSWORD'), 
-         subject = '任務通知', 
-         body = f'{project_info.KYC} 接到新任務：{project_info.projectName}', 
-         email_to = ['marcus.tsai@shopee.com'])
+        session.commit()  
 
     return {"message": "Project added successfully"}
-
-
+    
 
 # show main project
-@work_load_router.get("/main-project")
-async def get_main_project_columns():
-    color_dict = dict()
-    color_dict['CICD'] = 'rgba(30, 123, 162, 0.8)'
-    color_dict['FE'] = 'rgba(250, 197, 93, 0.8)'
-    color_dict['BE'] = 'rgba(237, 106, 95, 0.8)'
-    color_dict['PM'] = 'rgba(169, 209, 142, 0.8)'
-
+@work_load_router.get("/project-list")
+async def get_project_list():
+   
     with Session() as session:
-        query = session.query(MainProject.project_name, MainProject.start_day, MainProject.end_day, MainProject.des, MainProject.tag)
+        query = session.query(WLMainProject.project_id,
+                              WLMainProject.project_name,
+                              WLMainProject.KPI,
+                              WLMainProject.created_time,
+                              WLMainProject.updated_time,
+                              WLMainProject.team)
         results = query.all()
         
         data = [
-            {
+            {   
+                "pro_id": result.project_id,
                 "project_name": result.project_name,
-                "start_day": result.start_day.strftime("%Y-%m-%d"),
-                "end_day": result.end_day.strftime("%Y-%m-%d"),
-                "description":result.des,
-                "tag": result.tag,
-                "color":color_dict[result.tag]
+                "KPI": result.KPI,
+                "created_time": result.created_time.strftime("%Y-%m-%d"),
+                "updated_time": result.updated_time.strftime("%Y-%m-%d"),
+                "team":result.team
             }
             for result in results
         ]
 
         # return outcome
-        return {"main_projects": data}
-
-
-from .request_model import AddMember
-# add member 
-@work_load_router.post("/add-member")
-async def add_main_member(member_info:AddMember):
+        return {"project_list": data}
     
-    
+# show project detail by pro_id
+from app.schemas.WL import WLFile, WLData
+@work_load_router.get("/project-detail")
+async def get_project_detail(pro_id: str = Query(...)):
+    print(pro_id)
     with Session() as session:
-        new_member = Member(
-            chineseName = member_info.chineseName,
-            englishName = member_info.englishName,
-            email = member_info.email,
-            department = member_info.department,
-            team = member_info.team,
-            level = member_info.level,
-            manager = json.dumps(member_info.manager),
-        )
-        session.add(new_member)
-        session.commit()
-    return {"message": "Member added successfully"}
-
-
-# show member
-import ast
-@work_load_router.get("/member")
-async def get_member():
-
-    with Session() as session:
-        query = session.query(Member.chineseName , Member.englishName, Member.department, Member.team, Member.manager, Member.level)
-        results = query.all()
+        # 使用 filter_by 在数据库查询中使用 pro_id
         
-        data = [
-            {
+        results = session.query(WLFile.file_id,
+                                WLFile.file_name,
+                                WLFile.created_time,
+                                WLFile.project_id,
+                                    ).filter(WLFile.project_id == int(pro_id)).all()
 
-                "chineseName": result.chineseName,
-                "englishName": result.englishName,
-                "department": result.department,
-                "team":  result.team,
-                "manager": ast.literal_eval(result.manager),
-                "level": result.level,
+        # 检查是否找到了对应的项目
+        if results is None:
+            raise HTTPException(status_code=404, detail="Project not found")
+        print('答案')
+        print(results)
+
+        # 将结果转换为字典
+        data = []
+        for result in results:
+            item_sum = session.query(WLData.row_id).filter(WLData.file_id == result.file_id).count()
+
+            new_result = {   
+                    "project_id": result.project_id,
+                    "file_name": result.file_name,
+                    "created_time": result.created_time.strftime("%Y-%m-%d"),
+                    "item_sum":item_sum,
             }
-            for result in results
-        ]
+            data.append(new_result)
 
-        # return outcome
-        return {"member": data}
-    
-# show memberList
-@work_load_router.get("/member-list")
-async def get_member_list():
-
-    with Session() as session:
-        query = session.query(Member.englishName).distinct()
-        results = query.all()
+        print(data)
         
-        data = [
-            result.englishName
-            for result in results
-        ]
+        return {"project_detail": data}
 
-        # return outcome
-        return {"member": data}
+
+
+from .request_model import AddFile
+@work_load_router.post("/upload-task-file")
+async def upload_task_file(files: List[UploadFile] = File(...), pro_id: int = Query(...)):
+
+    for file in files:
+        df = pd.read_excel(file.file)
+        created_time = datetime.now().replace(microsecond=0)
+        # 寫入資料資訊
+
+        with Session() as session:
+            new_file_info = WLFile(
+                file_name = file.filename,
+                created_time = created_time,
+                project_id = pro_id
+            )
+
+            session.add(new_file_info)
+            session.flush()
+                
+            for _, row in df.iterrows():
+                row_data = "->".join(str(row[column]) for column in df.columns)
+                print(row_data)
+                wl_data = WLData(
+                    file_id = new_file_info.file_id,
+                    row_id = row.name,
+                    row_data = row_data,
+                    row_complete="",
+                    row_customed=""
+                )
+                session.add(wl_data)
+            session.commit()
+    return {"message": "File added successfully"}
