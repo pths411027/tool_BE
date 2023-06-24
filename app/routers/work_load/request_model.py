@@ -13,10 +13,13 @@ class AddTeam(BaseModel):
     teamName: str = Field(..., example="3C電子產品部門")
 
 class AddMember(BaseModel):
-    englishName: str = Field(..., example="Marcus Tsai")
-    email: str = Field(..., example="marcus.tsai@shopee.com")
-    team: str = Field(..., example="3C電子產品部門")
-    level: str = Field(..., example="SE")
+    memberName: str = Field(..., example="Marcus Tsai")
+    memberPhoto: str = Field(..., example="old-man")
+    memberEmail: str = Field(..., example="Marcus.tsai")
+    memberEmailType: str = Field(..., example="@shopee.com")
+    memberLevel: str = Field(..., example="Entry")
+    
 
 class AddFile(BaseModel):
     pro_id: int = Field(..., example=3)
+

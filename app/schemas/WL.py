@@ -29,7 +29,8 @@ class WLTeam(Base):
 class WLMember(Base):
     __tablename__ = "WL_member"
     member_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    englishName = Column(String(255), index=False)
+    memberName = Column(String(255), index=False)
+    memberPhoto = Column(String(255), index=False)
     email = Column(String(255), primary_key=False, index=False)
     team_id = Column(Integer, primary_key=False, index=False)
     level = Column(String(255), primary_key=False, index=False)

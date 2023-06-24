@@ -63,25 +63,26 @@ from app.schemas.WL import WLMember
 @work_load_router.post("/add_member")
 async def add_team(member_info:AddMember):
     print(member_info)
+
+    
     with Session() as session:
         
-        existing_member = session.query(WLMember).filter_by(englishName=member_info.englishName).first()
+        existing_member = session.query(WLMember).filter_by(memberName=member_info.memberName).first()
         if existing_member:
             raise HTTPException(status_code=400, detail="Member already exists")
         
-        team = session.query(WLTeam).filter_by(teamName=member_info.team).first()
-        if not team:
-            raise HTTPException(status_code=400, detail="Team not found")
 
         new_member = WLMember(
-            englishName = member_info.englishName,
-            email = member_info.email,
-            team = team.pro_id,
-            level = member_info.level
+            memberName = member_info.memberName,
+            memberPhoto = member_info.memberPhoto,
+            email =  member_info.memberEmail + member_info.memberEmailType,
+            team_id = 0,
+            level = member_info.memberLevel
         )
         session.add(new_member)
         session.commit()
     return {"message": "Team added successfully"}
+    
 
 from .request_model import AddMainProject
 from app.schemas.WL import WLMainProject
