@@ -9,8 +9,9 @@ services:
       - "8550:8080"
     environment:
       - TZ=Asia/Taipei
-    command: 
-      - /bin/sh
-      - -c
-      - /code/entrypoint.sh
+      - SQLITE_PATH=/sqlite.db
+    volumes:
+      - ./app:/code/app
+    #  - .Side_Project.db:/Side_Project.db
+      - "./data/sqlite.db:/sqlite.db"
     restart: unless-stopped
