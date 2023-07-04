@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 
 
 engine = create_engine(
-    'sqlite:///Side_Project.db',
+    'sqlite:///app/Side_Project.db',
     pool_pre_ping=True, 
     pool_recycle=300,
     echo=True

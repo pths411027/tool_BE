@@ -1,5 +1,5 @@
 from typing import Union
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 import logging.config
 from dotenv import load_dotenv
@@ -9,10 +9,23 @@ logging.config.dictConfig(LOGGING_CONFIG)
 from .routers import routers
 app_logger = logging.getLogger('app')
 
+
+from app.database.sqlalchemy import Session
+
+
+
+
 # 設定環境參數
 load_dotenv()
 
 app = FastAPI(debug=True)
+def get_db():
+    db = Session()
+    try:
+        yield db
+    finally:
+        db.close()
+
 # 設置跨域中間件
 app.add_middleware(
     CORSMiddleware,
@@ -31,7 +44,7 @@ def read_root():
 
 
 @app.get("/items/{item_id}")
-def read_item(item_id: int, q: Union[str, None] = None):
+def read_item(item_id: int, q: Union[str, None] = None, db: Session = Depends(get_db)):
     return {"item_id": item_id, "q": q}
 
 
