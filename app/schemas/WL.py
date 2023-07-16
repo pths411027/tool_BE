@@ -1,5 +1,5 @@
 # for development
-from sqlalchemy import Column, Integer, String, Date, Boolean, Float, JSON, TEXT, Index, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, Date, Boolean, Float, JSON, TEXT, Index, ForeignKey, DateTime, LargeBinary
 from app.database.sqlalchemy import Base
 
 class WLMainProject(Base):
@@ -41,6 +41,12 @@ class WLFile(Base):
     file_name = Column(String(255), primary_key=False, index=False)
     created_time = Column(DateTime, primary_key=False, index=False)
     project_id = Column(Integer, primary_key=False, index=False)
+    file_data = Column(LargeBinary)
+    file_type = Column(String(255)) 
+    file_extension = Column(String(255)) 
+    file_size = Column(Integer)
+    file_finish = Column(Boolean)
+
 
 class WLData(Base):
     __tablename__ = "WL_data"
@@ -49,3 +55,7 @@ class WLData(Base):
     row_data = Column(String, primary_key=False, index=False)
     row_complete = Column(String, primary_key=False, index=False)
     row_customed = Column(String, primary_key=False, index=False)
+
+
+
+
