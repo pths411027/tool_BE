@@ -23,3 +23,9 @@ class AddMember(BaseModel):
 class AddFile(BaseModel):
     pro_id: int = Field(..., example=3)
 
+class AddTeam(BaseModel):
+    teamName: str = Field(..., example="3C電子產品部門")
+    manager: int = Field(..., example=1)
+    memberList: List[int] = Field(..., example=[2, 6])
+    
+
