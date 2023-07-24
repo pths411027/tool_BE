@@ -1,5 +1,6 @@
 from typing import Union
 from fastapi import FastAPI, Depends
+from fastapi.security import OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware
 import logging.config
 from dotenv import load_dotenv
@@ -19,6 +20,7 @@ from app.database.sqlalchemy import Session
 load_dotenv()
 
 app = FastAPI(debug=True)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 def get_db():
     db = Session()
     try:
@@ -44,7 +46,7 @@ def read_root():
 
 
 @app.get("/items/{item_id}")
-def read_item(item_id: int, q: Union[str, None] = None, db: Session = Depends(get_db)):
+def read_item(item_id: int, q: Union[str, None] = None, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     return {"item_id": item_id, "q": q}
 
 

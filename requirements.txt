@@ -28,3 +28,5 @@ PyMySQL==1.0.2
 asyncpg
 psycopg2-binary
 python-magic==0.4.22
+python-jose==3.2.0
+passlib==1.7.4
