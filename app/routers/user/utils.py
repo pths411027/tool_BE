@@ -22,7 +22,6 @@ def create_access_token(user:str, expires_delta: int):
     expires_delta = datetime.utcnow() + timedelta(minutes=expires_delta)
     encoded_jwt = jwt.encode({'sub': user,
                               'exp': expires_delta,
-                              'token_type': 'bearer',
                                     }, SECRET_KEY, ALGORITHM)
     return encoded_jwt
 
@@ -39,9 +38,12 @@ def authenticate_user(username: str, password: str):
             return False
         return user
 
-
+from fastapi import Depends
 from jose.exceptions import ExpiredSignatureError
-async def get_current_user(token: str = Cookie(None)):
+from fastapi.security import OAuth2PasswordBearer
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+async def get_current_user(token: str = Depends(oauth2_scheme)):
     # get env
     SECRET_KEY = os.getenv('SECRET_KEY')
     ALGORITHM = os.getenv('ALGORITHM')

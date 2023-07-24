@@ -25,24 +25,31 @@ async def user_home():
 
 
 from passlib.context import CryptContext
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from app.routers.user.request_model import RegisterUser
 from app.schemas.User import User
 @user_router.post("/token")
-async def register_user(user_info:RegisterUser):
-    print(user_info)
+async def register_user(user_info: OAuth2PasswordRequestForm = Depends()):
+
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     hashed_password = pwd_context.hash(user_info.password)
+    
     with Session() as session:
-        new_user = User(user_name=user_info.username,
-                        user_password=hashed_password,
-                        user_email=user_info.email
-                        )
-        session.add(new_user)
-        session.commit()
-    return {"access_token": create_access_token(user_info.username, expires_delta=30)}
+        # check if user exist
+        user = session.query(User).filter(User.user_name == user_info.username).first()
+        if user:
+            raise HTTPException(status_code=400, detail="Username already registered")
+        else:
+            new_user = User(user_name=user_info.username,
+                            user_password=hashed_password,
+                            # user_email=user_info.email
+                            )
+            session.add(new_user)
+            session.commit()
+    return {"access_token": create_access_token(user_info.username, expires_delta=30),'token_type': 'bearer',}
 
 
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+
 from app.routers.user.utils import authenticate_user
 
 @user_router.post("/login")
@@ -54,13 +61,14 @@ async def login_user(form_data: OAuth2PasswordRequestForm = Depends()):
                             detail="Incorrect username or password",
                             headers={"WWW-Authenticate": "Bearer"}
                             )
-    print(user)
+    
     access_token = create_access_token(
         user.user_name, expires_delta=30
     )
     return {"access_token": access_token, "token_type": "bearer"}
 from app.routers.user.utils import get_current_user
     
+
 @user_router.get("/status")
-async def check_login_status(user = Depends(get_current_user)):
+async def check_login_status(user:str = Depends(get_current_user)):
     return {"isLoggedIn": True}

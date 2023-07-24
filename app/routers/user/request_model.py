@@ -5,7 +5,7 @@ from typing import List
 class RegisterUser(BaseModel):
     username: str = Field(..., example="Marcus Tsai")
     password: str = Field(..., example="1234")
-    email: str = Field(..., example="marcus.tsai@shopp.com")
+    #vemail: str = Field(..., example="marcus.tsai@shopp.com")
     
 
 
