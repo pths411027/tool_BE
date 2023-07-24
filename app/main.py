@@ -20,7 +20,11 @@ from app.database.sqlalchemy import Session
 load_dotenv()
 
 app = FastAPI(debug=True)
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl="user/token",
+)
+
 def get_db():
     db = Session()
     try:
