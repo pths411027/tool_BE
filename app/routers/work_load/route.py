@@ -30,6 +30,7 @@ async def get_team_list():
                                 ).join(WLMember, WLTeam.team_id == WLMember.team_id, isouter=True
                                     ).group_by(WLTeam.teamName
                                         ).all()           
+        
         data = [
             {
                 "teamName": result.teamName,
