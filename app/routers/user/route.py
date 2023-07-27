@@ -24,12 +24,20 @@ async def user_home():
     return {"user_router": "home"}
 
 
+
+
+
+
+
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+
+
+
 from app.routers.user.request_model import RegisterUser
 from app.schemas.User import User
-@user_router.post("/token")
-async def register_user(user_info: OAuth2PasswordRequestForm = Depends()):
+@user_router.post("/register")
+async def register_user(user_info: RegisterUser = Depends()):
 
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     hashed_password = pwd_context.hash(user_info.password)
@@ -42,17 +50,16 @@ async def register_user(user_info: OAuth2PasswordRequestForm = Depends()):
         else:
             new_user = User(user_name=user_info.username,
                             user_password=hashed_password,
-                            # user_email=user_info.email
+                            user_email=user_info.email
                             )
             session.add(new_user)
             session.commit()
-    return {"access_token": create_access_token(user_info.username, expires_delta=30),'token_type': 'bearer',}
-
-
+    return {'detail': f'{user_info.username} registered successfully'}
+    
 
 from app.routers.user.utils import authenticate_user
 
-@user_router.post("/login")
+@user_router.post("/token")
 async def login_user(form_data: OAuth2PasswordRequestForm = Depends()):
     user  = authenticate_user(form_data.username, form_data.password)
     if not user:
@@ -61,7 +68,6 @@ async def login_user(form_data: OAuth2PasswordRequestForm = Depends()):
                             detail="Incorrect username or password",
                             headers={"WWW-Authenticate": "Bearer"}
                             )
-    
     access_token = create_access_token(
         user.user_name, expires_delta=30
     )

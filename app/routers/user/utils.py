@@ -20,6 +20,7 @@ def create_access_token(user:str, expires_delta: int):
 
     # expires_time
     expires_delta = datetime.utcnow() + timedelta(minutes=expires_delta)
+    
     encoded_jwt = jwt.encode({'sub': user,
                               'exp': expires_delta,
                                     }, SECRET_KEY, ALGORITHM)
@@ -47,8 +48,6 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     # get env
     SECRET_KEY = os.getenv('SECRET_KEY')
     ALGORITHM = os.getenv('ALGORITHM')
-    print(f'Token: {token}')
-
     if token is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
     try:

@@ -11,7 +11,7 @@ from sqlalchemy import desc, func
 
 load_dotenv()
 app = FastAPI()
-work_load_router = APIRouter(tags=["Work Load"], prefix="/work_load")
+work_load_router = APIRouter(tags=["Work Load"], prefix="/work-load")
 
 
 @work_load_router.get("/home")
