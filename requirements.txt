@@ -30,3 +30,4 @@ psycopg2-binary
 python-magic==0.4.22
 python-jose==3.2.0
 passlib==1.7.4
+sqlparse==0.4.2
