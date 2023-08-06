@@ -240,11 +240,16 @@ async def get_project_detail(pro_id: str = Query(...)):
         return {"project_detail": data}
 
 import magic
-from .request_model import AddFile
+from fastapi import BackgroundTasks
+
+from app.routers.work_load.BE_tool_func import process_file
+# from .request_model import AddFile
 @work_load_router.post("/upload-task-file")
-async def upload_task_file(files: List[UploadFile] = File(...), pro_id: int = Query(...)):
+async def upload_task_file(background_tasks: BackgroundTasks, files: List[UploadFile] = File(...), pro_id: int = Query(...)):
 
     for file in files:
+        background_tasks.add_task(process_file, file, pro_id, Session)
+        """
         file_content = await file.read()
         file_mime = magic.from_buffer(file_content, mime=True)
         file_extention = os.path.splitext(file.filename)[1]
@@ -264,7 +269,8 @@ async def upload_task_file(files: List[UploadFile] = File(...), pro_id: int = Qu
                 file_finish = False,
             )
             session.add(new_file)
-            session.commit()      
+            session.commit()   
+        """   
     return {"message": "File added successfully"}
 
 
