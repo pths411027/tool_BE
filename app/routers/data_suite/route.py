@@ -105,6 +105,65 @@ async def data_suite_google_sheet(Google_sheet_info: Google_sheet,
     background_tasks.add_task(write_to_google_sheet, df, sheet, Google_sheet_info.start_cell, Google_sheet_info.include_header)
     return {"message": "Data written to Google Sheet successfully"}
 
-
- 
+from app.routers.data_suite.request_model import Google_sheet_task
+from app.schemas.DS import DataSuiteTask
+@data_suite_router.post("/google-sheet-task")
+async def data_suite_google_sheet_task(Google_sheet_task_info: Google_sheet_task):
+    print(Google_sheet_task_info)
     
+    with Session() as session:
+        new_task = DataSuiteTask(
+            task_name = Google_sheet_task_info.task_name,
+            task_url = Google_sheet_task_info.url,
+            task_sheet_name = Google_sheet_task_info.sheet_name,
+            task_start_cell = Google_sheet_task_info.start_cell,
+            task_include_header = Google_sheet_task_info.include_header,
+            task_query = Google_sheet_task_info.query,
+            task_frequency = Google_sheet_task_info.frequency,
+            run_time = Google_sheet_task_info.run_time
+        )
+        session.add(new_task)
+        session.commit()
+
+    return None    
+
+# airflow will trigger this api
+from sqlalchemy import extract
+
+@data_suite_router.get("/run-google-sheet-task")
+async def data_suite_run_google_sheet_task():
+    # now 現在幾點
+    now = int(datetime.now().strftime("%H"))
+    print(now)
+    print(type(now))
+    
+    with Session() as session:
+        # daily
+        run_task_daily = session.query(DataSuiteTask
+                                        ).filter(extract('hour', DataSuiteTask.run_time) == int(now)
+                                        ).filter(DataSuiteTask.task_frequency == 'daily'
+                                            ).all()
+        if run_task_daily is not None:
+            for task in run_task_daily:
+                column_names, data = get_db(task.task_query, Session, -1)
+                df = pd.DataFrame(data)
+
+                gc = pygsheets.authorize(service_account_file="app/Credentials.json")
+                wb = gc.open_by_url(task.task_url)
+                sheet = wb.worksheet_by_title(task.task_sheet_name)
+                write_to_google_sheet(df, sheet, task.task_start_cell, task.task_include_header)
+
+        # hourly
+        run_task_hourly = session.query(DataSuiteTask
+                                        ).filter(DataSuiteTask.task_frequency == 'hourly'
+                                            ).all()
+        if run_task_hourly is not None:
+            for task in run_task_hourly:
+                column_names, data = get_db(task.task_query, Session, -1)
+                df = pd.DataFrame(data)
+
+                gc = pygsheets.authorize(service_account_file="app/Credentials.json")
+                wb = gc.open_by_url(task.task_url)
+                sheet = wb.worksheet_by_title(task.task_sheet_name)
+                write_to_google_sheet(df, sheet, task.task_start_cell, task.task_include_header)
+        

@@ -1,7 +1,6 @@
 # query from string to data
 import sqlparse
 def get_db(query_string: str, Session, limit: int):
-    #print(query_string)
    
 
     parsed = sqlparse.parse(query_string)
@@ -39,7 +38,5 @@ def write_to_google_sheet(df,
                           include_header: bool
                           ):
     # get data
-    
-
     sheet.clear()
     sheet.set_dataframe(df, start=start_cell, copy_index=False, copy_head=include_header)

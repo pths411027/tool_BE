@@ -27,5 +27,6 @@ Base = declarative_base()
 from app.schemas.PM import MainProject, SubProject, Member
 from app.schemas.WL import WLMainProject , WLOption_Answer, WLMember, WLTeam
 from app.schemas.User import User
+from app.schemas.DS import DataSuiteTask
 
 Base.metadata.create_all(engine)
