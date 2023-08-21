@@ -1,6 +1,6 @@
 import logging
-from typing import Optional
 from copy import copy
+from typing import Optional
 
 import click
 
@@ -48,7 +48,6 @@ class ColourizedFormatter(logging.Formatter):
         return func(level_name)
 
     def formatMessage(self, record: logging.LogRecord) -> str:
-        
         recordcopy = copy(record)
         # print(record.__dict__)
         levelname = recordcopy.levelname

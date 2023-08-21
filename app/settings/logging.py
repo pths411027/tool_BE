@@ -3,7 +3,7 @@ import os
 # from app.settings.config import LoggerSettings
 
 root_path = os.path.abspath(os.curdir)
-logs_path = os.path.join(root_path, 'app/logs')
+logs_path = os.path.join(root_path, "app/logs")
 if not os.path.exists(logs_path):
     os.makedirs(logs_path)
 
@@ -68,7 +68,7 @@ LOGGING_CONFIG: dict = {
                 # "logstash",
             ],
             "level": "DEBUG",
-            "propagate": False
+            "propagate": False,
         },
         # "app.error": {
         #     "handlers": ["console"],
@@ -86,7 +86,7 @@ LOGGING_CONFIG: dict = {
                 # "logstash",
             ],
             "level": "INFO",
-            "propagate": True
+            "propagate": True,
         },
     },
 }

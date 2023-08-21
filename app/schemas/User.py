@@ -1,5 +1,7 @@
 # for development
-from sqlalchemy import Column, Integer, String, Date, Boolean, Float, JSON, TEXT, Index, ForeignKey
+from sqlalchemy import (JSON, TEXT, Boolean, Column, Date, Float, ForeignKey,
+                        Index, Integer, String)
+
 from app.database.sqlalchemy import Base
 
 
@@ -9,8 +11,3 @@ class User(Base):
     user_name = Column(String(255), primary_key=False, index=True)
     user_password = Column(String(255), primary_key=False, index=False)
     user_email = Column(String(255), primary_key=False, index=False)
-
-
-
-
-   

@@ -1,20 +1,28 @@
-
 # 寄信函式
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-def Send(smtp_ssl_host, smtp_ssl_port, username, password, email_subject, email_body, email_to):
+
+def Send(
+    smtp_ssl_host,
+    smtp_ssl_port,
+    username,
+    password,
+    email_subject,
+    email_body,
+    email_to,
+):
     msg = MIMEMultipart()
-    msg['Subject'] = email_subject
-    msg['From'] = username
-    msg['To'] = ', '.join(email_to)
-    person = ''
+    msg["Subject"] = email_subject
+    msg["From"] = username
+    msg["To"] = ", ".join(email_to)
+    person = ""
     for man in email_to:
-        person += man.split('@')[0] + ', '
-        
+        person += man.split("@")[0] + ", "
+
     body = f"Hi {person[:-2]}，\n\n{email_body}"
-    message = MIMEText(body, 'plain')
+    message = MIMEText(body, "plain")
     msg.attach(message)
     smtp_tls = True
     try:

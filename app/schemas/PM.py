@@ -1,5 +1,7 @@
 # for development
-from sqlalchemy import Column, Integer, String, Date, Boolean, Float, JSON, TEXT, Index, ForeignKey
+from sqlalchemy import (JSON, TEXT, Boolean, Column, Date, Float, ForeignKey,
+                        Index, Integer, String)
+
 from app.database.sqlalchemy import Base
 
 
@@ -13,13 +15,15 @@ class MainProject(Base):
     end_day = Column(Date, index=False)
     tag = Column(String(255), index=False)
 
+
 class SubProject(Base):
     __tablename__ = "PM_sub_project"
     pro_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    parent_pro_id = Column(Integer, ForeignKey('PM_main_project.pro_id'), index=True)
+    parent_pro_id = Column(Integer, ForeignKey("PM_main_project.pro_id"), index=True)
     project_name = Column(String(255), primary_key=False, index=True)
     des = Column(String(255), primary_key=False, index=False)
     tag = Column(String(255), index=False)
+
 
 class Member(Base):
     __tablename__ = "PM_member"
@@ -31,8 +35,3 @@ class Member(Base):
     team = Column(String(255), primary_key=False, index=False)
     level = Column(String(255), primary_key=False, index=False)
     manager = Column(String(255), primary_key=False, index=False)
-
-
-
-
-   

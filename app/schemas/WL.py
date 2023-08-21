@@ -1,6 +1,9 @@
 # for development
-from sqlalchemy import Column, Integer, String, Date, Boolean, Float, JSON, TEXT, Index, ForeignKey, DateTime, LargeBinary
+from sqlalchemy import (JSON, TEXT, Boolean, Column, Date, DateTime, Float,
+                        ForeignKey, Index, Integer, LargeBinary, String)
+
 from app.database.sqlalchemy import Base
+
 
 class WLMainProject(Base):
     __tablename__ = "WL_main_project"
@@ -10,7 +13,7 @@ class WLMainProject(Base):
     created_time = Column(DateTime, index=False)
     updated_time = Column(DateTime, index=False)
     team = Column(Integer, index=False)
-    
+
 
 class WLOption_Answer(Base):
     __tablename__ = "WL_optionn_ans"
@@ -19,6 +22,7 @@ class WLOption_Answer(Base):
     option_name = Column(String(255), primary_key=False, index=True)
     option_revise = Column(Boolean, primary_key=False, index=False)
     option_color = Column(String(255), primary_key=False, index=False)
+
 
 class WLTeam(Base):
     __tablename__ = "WL_team"
@@ -35,6 +39,7 @@ class WLMember(Base):
     team_id = Column(Integer, primary_key=False, index=False)
     level = Column(String(255), primary_key=False, index=False)
 
+
 class WLFile(Base):
     __tablename__ = "WL_file"
     file_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -42,20 +47,16 @@ class WLFile(Base):
     created_time = Column(DateTime, primary_key=False, index=False)
     project_id = Column(Integer, primary_key=False, index=False)
     file_data = Column(LargeBinary)
-    file_type = Column(String(255)) 
-    file_extension = Column(String(255)) 
+    file_type = Column(String(255))
+    file_extension = Column(String(255))
     file_size = Column(Integer)
     file_finish = Column(Boolean)
 
 
 class WLData(Base):
     __tablename__ = "WL_data"
-    file_id =  Column(Integer, primary_key=True, index=True)
+    file_id = Column(Integer, primary_key=True, index=True)
     row_id = Column(Integer, primary_key=True, index=True)
     row_data = Column(String, primary_key=False, index=False)
     row_complete = Column(String, primary_key=False, index=False)
     row_customed = Column(String, primary_key=False, index=False)
-
-
-
-
