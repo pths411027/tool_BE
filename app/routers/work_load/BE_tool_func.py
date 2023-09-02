@@ -64,3 +64,87 @@ async def process_file(file, pro_id: int, Session):
         )
         session.add(new_file)
         session.commit()
+
+
+import pandas as pd
+from io import BytesIO
+from app.schemas.WL import WLData
+from app.schemas.WL import WLMainProject
+import sys
+from sqlalchemy import func
+
+
+async def process_file_excel(file, pro_id: int, Session, first_upload: bool):
+    file_content = await file.read()
+    file_mime = magic.from_buffer(file_content, mime=True)
+    file_extention = os.path.splitext(file.filename)[1]
+    created_time = int(datetime.now().replace(microsecond=0).timestamp())
+    file_size_kb = len(file_content) / 1024
+    df = pd.read_excel(BytesIO(file_content), engine="openpyxl")
+
+    if first_upload == True:
+        print("first upload")
+        # df = pd.read_excel(BytesIO(file_content), engine="openpyxl")
+        col_format = df.columns.tolist()
+        col_format = "|".join(col_format)
+        with Session() as session:
+            session.query(WLMainProject).filter(
+                WLMainProject.project_id == pro_id
+            ).update({WLMainProject.file_format: col_format})
+            session.commit()
+
+        print(col_format)
+    else:
+        print("not first upload")
+
+    with Session() as session:
+        # get distinct col
+        distinct_col = (
+            session.query(WLMainProject)
+            .filter(WLMainProject.project_id == pro_id)
+            .first()
+        )
+        distinct_col = distinct_col.distinct_col.split("|")
+        print(distinct_col)
+
+        max_priority = (
+            session.query(func.max(WLFile.file_priority))
+            .filter(WLFile.project_id == pro_id)
+            .scalar()
+        )
+        max_priority = max_priority + 1 if max_priority else 1
+
+        # TODO:check format
+        new_file = WLFile(
+            file_name=file.filename,
+            created_time=created_time,
+            project_id=pro_id,
+            # file_data=file_content,
+            file_type=file_mime,
+            file_extension=file_extention,
+            file_size=file_size_kb,
+            file_finish=False,
+            file_status=1,
+            file_priority=max_priority,
+        )
+        session.add(new_file)
+        session.flush()
+
+        new_file_id = new_file.file_id
+
+        df["data"] = df.apply(lambda row: "|".join(row.astype(str)), axis=1)
+        df["distinct_detemine"] = df[distinct_col].apply(
+            lambda row: "|".join(row.astype(str)), axis=1
+        )
+
+        for i in df.index:
+            new_row = WLData(
+                file_id=new_file_id,
+                row_id=i,
+                row_data=df["data"][i],
+                completed=False,
+                modify_time=created_time,
+                distinct_detemine=df["distinct_detemine"][i],
+            )
+            session.add(new_row)
+        session.commit()
