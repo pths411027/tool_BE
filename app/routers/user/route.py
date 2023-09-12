@@ -1,17 +1,16 @@
-import json
-import os
-from datetime import datetime, timedelta
-from typing import List
-
-import pandas as pd
 from dotenv import load_dotenv
-from fastapi import (APIRouter, Depends, FastAPI, File, Form, HTTPException,
-                     Path, Query, Request, UploadFile, status)
-from jose import JWTError, jwt
-from sqlalchemy import desc, func
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+from passlib.context import CryptContext
 
-from app.database.sqlalchemy import Session, engine
-from app.routers.user.utils import create_access_token
+from app.database.sqlalchemy import Session
+from app.routers.user.request_model import RegisterUser
+from app.routers.user.utils import (
+    authenticate_user,
+    create_access_token,
+    get_current_user,
+)
+from app.schemas.WL import WLMember
 
 load_dotenv()
 app = FastAPI()
@@ -24,53 +23,50 @@ async def user_home():
     return {"user_router": "home"}
 
 
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from passlib.context import CryptContext
-
-from app.routers.user.request_model import RegisterUser
-from app.schemas.User import User
-
-
-@user_router.post("/register")
-async def register_user(user_info: RegisterUser = Depends()):
+@user_router.post("/register", status_code=status.HTTP_201_CREATED)
+async def register_user(user_info: RegisterUser):
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-    hashed_password = pwd_context.hash(user_info.password)
+    hashed_password = pwd_context.hash(user_info.member_password)
 
     with Session() as session:
-        # check if user exist
-        user = session.query(User).filter(User.user_name == user_info.username).first()
-        if user:
-            raise HTTPException(status_code=400, detail="Username already registered")
-        else:
-            new_user = User(
-                user_name=user_info.username,
-                user_password=hashed_password,
-                user_email=user_info.email,
+        existing_member = (
+            session.query(WLMember).filter_by(member_name=user_info.member_name).first()
+        )
+
+        if existing_member:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Member_{user_info.member_name} already exists",
             )
-            session.add(new_user)
-            session.commit()
-    return {"detail": f"{user_info.username} registered successfully"}
+        else:
+            new_member = WLMember(
+                member_name=user_info.member_name,
+                member_photo=user_info.member_photo,
+                member_password=hashed_password,
+                member_email=user_info.member_email + user_info.member_email_type,
+                team_id=0,
+                member_level=user_info.member_level,
+            )
+        session.add(new_member)
+        session.commit()
+
+    return {"detail": f"{user_info.member_name} has registered successfully"}
 
 
-from app.routers.user.utils import authenticate_user
-
-
-@user_router.post("/token")
-async def login_user(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(form_data.username, form_data.password)
+@user_router.post("/token", status_code=status.HTTP_200_OK)
+async def token(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = authenticate_user(form_data)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token = create_access_token(user.user_name, expires_delta=30)
+    access_token = create_access_token(user=user, expires_delta=30)
+
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-from app.routers.user.utils import get_current_user
-
-
-@user_router.get("/status")
+@user_router.get("/status", status_code=status.HTTP_200_OK)
 async def check_login_status(user: str = Depends(get_current_user)):
-    return {"isLoggedIn": True}
+    return {"isLoggedIn": True, "user": user}
