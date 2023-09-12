@@ -1,4 +1,5 @@
-# query from string to data
+from datetime import datetime, timedelta
+
 import sqlparse
 
 
@@ -33,19 +34,12 @@ def get_db(query_string: str, Session, limit: int):
     return list(column_names), data
 
 
-import pandas as pd
-import pygsheets
-
-
 def write_to_google_sheet(df, sheet, start_cell: str, include_header: bool):
     # get data
     sheet.clear()
     sheet.set_dataframe(
         df, start=start_cell, copy_index=False, copy_head=include_header
     )
-
-
-from datetime import datetime, timedelta
 
 
 def next_runtime_calculator(active, frequency):
@@ -66,7 +60,7 @@ def next_runtime_calculator(active, frequency):
 
 
 def unix_time_transformer(time):
-    if time == None:
+    if time is None:
         return "未執行"
     else:
         return datetime.fromtimestamp(time).strftime("%Y-%m-%d %H:%M:%S")

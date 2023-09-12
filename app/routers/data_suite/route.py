@@ -1,11 +1,21 @@
-import json
-import os
+import io
 from datetime import datetime
 
+import pandas as pd
+import pygsheets
 from dotenv import load_dotenv
-from fastapi import APIRouter, FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, BackgroundTasks, FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
+from sqlalchemy import extract
 
-from app.database.sqlalchemy import Session, engine
+from app.database.sqlalchemy import Base, Session
+from app.routers.data_suite.request_model import (Google_sheet,
+                                                  Google_sheet_task,
+                                                  Query_info, WorkFlow)
+from app.routers.data_suite.utils import (get_db, next_runtime_calculator,
+                                          unix_time_transformer,
+                                          write_to_google_sheet)
+from app.schemas.DS import DataSuiteTask, DataSuiteWorkFlow
 
 load_dotenv()
 
@@ -19,12 +29,6 @@ async def data_suite_home():
     return {"data_suite_router": "home"}
 
 
-import sqlparse
-
-from app.routers.data_suite.request_model import Query_info
-from app.routers.data_suite.utils import get_db
-
-
 @data_suite_router.post("/query")
 async def data_suite_query(query_info: Query_info):
     print(query_info)
@@ -35,12 +39,6 @@ async def data_suite_query(query_info: Query_info):
         raise HTTPException(status_code=400, detail=data)
     else:
         return {"column_names": list(column_names), "data": data}
-
-
-import io
-
-import pandas as pd
-from fastapi.responses import FileResponse, StreamingResponse
 
 
 @data_suite_router.post("/download")
@@ -59,18 +57,10 @@ async def data_suite_download(query_info: Query_info):
     return response
 
 
-from sqlalchemy import MetaData
-
-from app.database.sqlalchemy import Base
-
-
 @data_suite_router.get("/table")
 async def data_suite_table():
     table_list = list(Base.metadata.tables.keys())
     return {"table_list": table_list}
-
-
-import pygsheets
 
 
 @data_suite_router.get("/google-sheet-name")
@@ -81,16 +71,10 @@ async def data_suite_google_sheet_name(url: str):
         sheet_list = [ws.title for ws in worksheets]  # 获取工作表名字列表
         print("Good")
         return {"status": "success", "sheet_list": sheet_list}
-    except:
-        print("Not Good")
+    except Exception as e:
+        print(f"Not Good: {e}")
         return {"status": "fail"}
         # raise HTTPException(status_code=400, detail="Invalid url")
-
-
-from fastapi import BackgroundTasks
-
-from app.routers.data_suite.request_model import Google_sheet
-from app.routers.data_suite.utils import write_to_google_sheet
 
 
 @data_suite_router.post("/google-sheet")
@@ -118,10 +102,6 @@ async def data_suite_google_sheet(
     return {"message": "Data written to Google Sheet successfully"}
 
 
-from app.routers.data_suite.request_model import Google_sheet_task
-from app.schemas.DS import DataSuiteTask
-
-
 @data_suite_router.post("/google-sheet-task")
 async def data_suite_google_sheet_task(Google_sheet_task_info: Google_sheet_task):
     print(Google_sheet_task_info)
@@ -144,7 +124,6 @@ async def data_suite_google_sheet_task(Google_sheet_task_info: Google_sheet_task
 
 
 # airflow will trigger this api
-from sqlalchemy import extract
 
 
 @data_suite_router.get("/run-google-sheet-task")
@@ -193,10 +172,6 @@ async def data_suite_run_google_sheet_task():
                 )
 
 
-from app.routers.data_suite.request_model import WorkFlow
-from app.schemas.DS import DataSuiteWorkFlow
-
-
 @data_suite_router.post("/add-workflow")
 async def data_suite_add_workflow(workflow_info: WorkFlow):
     print(workflow_info)
@@ -236,9 +211,6 @@ def data_suite_run_workflow(workflow_id: int):
             print(subtask)
 
     return {"detail": "success"}
-
-
-from app.routers.data_suite.utils import next_runtime_calculator, unix_time_transformer
 
 
 @data_suite_router.get("/workflow")

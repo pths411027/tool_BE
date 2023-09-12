@@ -2,8 +2,7 @@ from datetime import time
 from enum import Enum
 from typing import List
 
-from fastapi import HTTPException, UploadFile
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, Field
 
 
 class Query_info(BaseModel):
