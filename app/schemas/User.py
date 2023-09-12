@@ -1,6 +1,5 @@
 # for development
-from sqlalchemy import (JSON, TEXT, Boolean, Column, Date, Float, ForeignKey,
-                        Index, Integer, String)
+from sqlalchemy import Column, Integer, String
 
 from app.database.sqlalchemy import Base
 

@@ -1,23 +1,12 @@
 # for development
-from sqlalchemy import (
-    JSON,
-    TEXT,
-    Boolean,
-    Column,
-    Float,
-    ForeignKey,
-    Index,
-    Integer,
-    String,
-    Time,
-)
+from sqlalchemy import TEXT, Boolean, Column, Integer, String, Time
 
 from app.database.sqlalchemy import Base
 
 
 class DataSuiteTask(Base):
     __tablename__ = "DS_task"
-    pro_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    project_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     task_name = Column(String(255), primary_key=False, index=True)
     task_url = Column(String(255), primary_key=False, index=False)
     task_sheet_name = Column(String(255), primary_key=False, index=False)
@@ -30,7 +19,7 @@ class DataSuiteTask(Base):
 
 class DataSuiteWorkFlow(Base):
     __tablename__ = "DS_workflows"
-    pro_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    project_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     work_flow_name = Column(String(255), primary_key=False, index=True)
     work_flow_frequency = Column(String(255), primary_key=False, index=False)
     """
