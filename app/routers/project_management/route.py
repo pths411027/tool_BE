@@ -1,12 +1,16 @@
+import ast
 import json
 import os
 from datetime import datetime
 
 from dotenv import load_dotenv
-from fastapi import (APIRouter, FastAPI, File, Form, HTTPException, Request,
-                     UploadFile)
+from fastapi import APIRouter, FastAPI
 
-from app.database.sqlalchemy import Session, engine
+from app.database.sqlalchemy import Session
+from app.routers.project_management.BE_tool_func import Send
+from app.schemas.PM import MainProject, Member, SubProject
+
+from .request_model import AddMainProject, AddMember
 
 load_dotenv()
 
@@ -19,12 +23,6 @@ pm_server_router = APIRouter(tags=["PM Server"], prefix="/pm-server")
 @pm_server_router.get("/home")
 async def pm_server_home():
     return {"pm_server_router": "home"}
-
-
-from app.routers.project_management.BE_tool_func import Send
-from app.schemas.PM import MainProject, Member, SubProject
-
-from .request_model import AddMainProject
 
 
 # add main project
@@ -102,9 +100,6 @@ async def get_main_project_columns():
         return {"main_projects": data}
 
 
-from .request_model import AddMember
-
-
 # add member
 @pm_server_router.post("/add-member")
 async def add_main_member(member_info: AddMember):
@@ -124,7 +119,6 @@ async def add_main_member(member_info: AddMember):
 
 
 # show member
-import ast
 
 
 @pm_server_router.get("/member")

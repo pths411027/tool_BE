@@ -1,8 +1,7 @@
-import re
 from typing import List
 
-from fastapi import HTTPException, UploadFile
-from pydantic import BaseModel, EmailStr, Field, validator
+from fastapi import HTTPException
+from pydantic import BaseModel, Field, validator
 
 
 class AddMainProject(BaseModel):
@@ -26,6 +25,6 @@ class AddMember(BaseModel):
 
     @validator("email")
     def email_must_be_shopee(cls, v):
-        if not "@shopee.com" in v:
+        if "@shopee.com" not in v:
             raise HTTPException(status_code=400, detail="請填入正確的蝦皮信箱")
         return v

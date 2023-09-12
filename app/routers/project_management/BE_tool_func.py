@@ -31,6 +31,6 @@ def Send(
                 smtp.starttls()
             smtp.login(username, password)
             smtp.sendmail(username, email_to, msg.as_string())
-        print(f"失敗信件寄出成功")
+        print("失敗信件寄出成功")
     except Exception as e:
         print(f"例外信件發送錯誤: {e}")
