@@ -1,30 +1,31 @@
-import json
 import os
 from datetime import datetime, timedelta
-from typing import List
 
-import pandas as pd
-from dotenv import load_dotenv
-from fastapi import (APIRouter, Cookie, FastAPI, File, Form, HTTPException,
-                     Path, Request, UploadFile)
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
-from sqlalchemy import desc, func
+from jose.exceptions import ExpiredSignatureError
+from passlib.context import CryptContext
 
-from app.database.sqlalchemy import Session, engine
+from app.database.sqlalchemy import Session
+from app.schemas.WL import WLMember
 
 
-def create_access_token(user: str, expires_delta: int):
+def create_access_token(user: dict, expires_delta: int) -> str:
     # get env
     SECRET_KEY = os.getenv("SECRET_KEY")
     ALGORITHM = os.getenv("ALGORITHM")
 
-    # expires_time
-    expires_delta = datetime.utcnow() + timedelta(minutes=expires_delta)
-
+    # prod: long expires time
+    # expires_delta = datetime.utcnow() + timedelta(minutes=expires_delta)
+    # dev: short expires time
+    expires_delta = datetime.utcnow() + timedelta(minutes=100)
     encoded_jwt = jwt.encode(
         {
-            "sub": user,
+            "sub": user["member_name"],
             "exp": expires_delta,
+            "id": user["member_id"],
+            "level": user["member_level"],
         },
         SECRET_KEY,
         ALGORITHM,
@@ -32,26 +33,31 @@ def create_access_token(user: str, expires_delta: int):
     return encoded_jwt
 
 
-from passlib.context import CryptContext
-
-from app.schemas.User import User
-
-
-def authenticate_user(username: str, password: str):
+def authenticate_user(form_data: OAuth2PasswordRequestForm):
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
     with Session() as session:
-        user = session.query(User).filter(User.user_name == username).first()
+        user = (
+            session.query(
+                WLMember.member_name,
+                WLMember.member_id,
+                WLMember.member_level,
+                WLMember.member_password,
+            )
+            .filter(WLMember.member_email == form_data.username)
+            .first()
+        )
         if not user:
-            return False
-        if not pwd_context.verify(password, user.user_password):
-            return False
-        return user
+            return None
+        elif not pwd_context.verify(form_data.password, user.member_password):
+            return None
+        else:
+            return {
+                "member_name": user.member_name,
+                "member_id": user.member_id,
+                "member_level": user.member_level,
+            }
 
-
-from fastapi import Depends
-from fastapi.security import OAuth2PasswordBearer
-from jose.exceptions import ExpiredSignatureError
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -61,11 +67,18 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     SECRET_KEY = os.getenv("SECRET_KEY")
     ALGORITHM = os.getenv("ALGORITHM")
     if token is None:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
+        )
+
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
     except ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expired")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired"
+        )
     except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+        )

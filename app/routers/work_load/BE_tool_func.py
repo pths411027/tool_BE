@@ -1,7 +1,16 @@
 # 寄信函式
+import os
 import smtplib
+from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from io import BytesIO
+
+import magic
+import pandas as pd
+from sqlalchemy import func
+
+from app.schemas.WL import WLData, WLFile, WLMainProject
 
 
 def Send(
@@ -31,20 +40,12 @@ def Send(
                 smtp.starttls()
             smtp.login(username, password)
             smtp.sendmail(username, email_to, msg.as_string())
-        print(f"失敗信件寄出成功")
+        print("失敗信件寄出成功")
     except Exception as e:
         print(f"例外信件發送錯誤: {e}")
 
 
-from datetime import datetime
-import os
-
-import magic
-
-from app.schemas.WL import WLFile
-
-
-async def process_file(file, pro_id: int, Session):
+async def process_file(file, project_id: int, Session):
     file_content = await file.read()
     file_mime = magic.from_buffer(file_content, mime=True)
     file_extention = os.path.splitext(file.filename)[1]
@@ -55,7 +56,7 @@ async def process_file(file, pro_id: int, Session):
         new_file = WLFile(
             file_name=file.filename,
             created_time=created_time,
-            project_id=pro_id,
+            project_id=project_id,
             file_data=file_content,
             file_type=file_mime,
             file_extension=file_extention,
@@ -66,31 +67,23 @@ async def process_file(file, pro_id: int, Session):
         session.commit()
 
 
-import pandas as pd
-from io import BytesIO
-from app.schemas.WL import WLData
-from app.schemas.WL import WLMainProject
-import sys
-from sqlalchemy import func
-
-
-async def process_file_excel(file, pro_id: int, Session, first_upload: bool):
+async def process_file_excel(file, project_id: int, Session, first_upload: bool):
     file_content = await file.read()
     file_mime = magic.from_buffer(file_content, mime=True)
     file_extention = os.path.splitext(file.filename)[1]
-    created_time = int(datetime.now().replace(microsecond=0).timestamp())
+    file_created_time = int(datetime.now().replace(microsecond=0).timestamp())
     file_size_kb = len(file_content) / 1024
     df = pd.read_excel(BytesIO(file_content), engine="openpyxl")
 
-    if first_upload == True:
+    if first_upload is True:
         print("first upload")
         # df = pd.read_excel(BytesIO(file_content), engine="openpyxl")
         col_format = df.columns.tolist()
         col_format = "|".join(col_format)
         with Session() as session:
             session.query(WLMainProject).filter(
-                WLMainProject.project_id == pro_id
-            ).update({WLMainProject.file_format: col_format})
+                WLMainProject.project_id == project_id
+            ).update({WLMainProject.project_file_format: col_format})
             session.commit()
 
         print(col_format)
@@ -99,17 +92,17 @@ async def process_file_excel(file, pro_id: int, Session, first_upload: bool):
 
     with Session() as session:
         # get distinct col
-        distinct_col = (
-            session.query(WLMainProject)
-            .filter(WLMainProject.project_id == pro_id)
+        project_file_format = (
+            session.query(WLMainProject.project_file_format)
+            .filter(WLMainProject.project_id == project_id)
             .first()
         )
-        distinct_col = distinct_col.distinct_col.split("|")
-        print(distinct_col)
+        project_file_format = project_file_format.project_file_format.split("|")
+        # print(distinct_col)
 
         max_priority = (
             session.query(func.max(WLFile.file_priority))
-            .filter(WLFile.project_id == pro_id)
+            .filter(WLFile.project_id == project_id)
             .scalar()
         )
         max_priority = max_priority + 1 if max_priority else 1
@@ -117,8 +110,8 @@ async def process_file_excel(file, pro_id: int, Session, first_upload: bool):
         # TODO:check format
         new_file = WLFile(
             file_name=file.filename,
-            created_time=created_time,
-            project_id=pro_id,
+            file_created_time=file_created_time,
+            project_id=project_id,
             # file_data=file_content,
             file_type=file_mime,
             file_extension=file_extention,
@@ -133,7 +126,7 @@ async def process_file_excel(file, pro_id: int, Session, first_upload: bool):
         new_file_id = new_file.file_id
 
         df["data"] = df.apply(lambda row: "|".join(row.astype(str)), axis=1)
-        df["distinct_detemine"] = df[distinct_col].apply(
+        df["distinct_detemine"] = df[project_file_format].apply(
             lambda row: "|".join(row.astype(str)), axis=1
         )
 
@@ -142,9 +135,9 @@ async def process_file_excel(file, pro_id: int, Session, first_upload: bool):
                 file_id=new_file_id,
                 row_id=i,
                 row_data=df["data"][i],
-                completed=False,
-                modify_time=created_time,
-                distinct_detemine=df["distinct_detemine"][i],
+                row_completed=False,
+                row_modify_time=file_created_time,
+                row_distinct_detemine=df["distinct_detemine"][i],
             )
             session.add(new_row)
         session.commit()

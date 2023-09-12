@@ -1,38 +1,26 @@
 from typing import List
-
-from fastapi import File, HTTPException, UploadFile
-from pydantic import BaseModel, EmailStr, Field, validator
+from datetime import datetime
+from pydantic import BaseModel, Field
 
 
 class AddMainProject(BaseModel):
-    projectName: str = Field(..., example="3C電子產品部門_資訊")
-    team: str = Field(..., example="3C電子產品部門")
-    KPI: str = Field(..., example="300")
-    optionInputs: List[List[str]] = Field(..., example=[["完成", True, "red"]])
-    customerInputs: List[List[str]] = Field(..., example=[["Remark", "int", "寫註解"]])
-    distinctInputs: List[List[str]] = Field(..., example=[["ItemID"], ["Ctime"]])
-
-
-class AddTeam(BaseModel):
-    teamName: str = Field(..., example="3C電子產品部門")
-
-
-class AddMember(BaseModel):
-    memberName: str = Field(..., example="Marcus Tsai")
-    memberPhoto: str = Field(..., example="old-man")
-    memberEmail: str = Field(..., example="Marcus.tsai")
-    memberEmailType: str = Field(..., example="@shopee.com")
-    memberLevel: str = Field(..., example="Entry")
+    project_name: str = Field(..., example="3C電子產品部門_資訊")
+    team_id: int = Field(..., example=1)
+    project_KPI: int = Field(..., example=300)
+    # project_status: int = Field(..., example=1)
+    option_inputs: List[List[str]] = Field(..., example=[["完成", True, "red"]])
+    customer_inputs: List[List[str]] = Field(..., example=[["Remark", "int", "寫註解"]])
+    distinct_inputs: List[List[str]] = Field(..., example=[["ItemID"], ["Ctime"]])
 
 
 class AddFile(BaseModel):
-    pro_id: int = Field(..., example=3)
+    project_id: int = Field(..., example=3)
 
 
 class AddTeam(BaseModel):
-    teamName: str = Field(..., example="3C電子產品部門")
+    team_name: str = Field(..., example="3C電子產品部門")
     manager: int = Field(..., example=1)
-    memberList: List[int] = Field(..., example=[2, 6])
+    member_list: List[int] = Field(..., example=[2, 6])
 
 
 class AskTask(BaseModel):
@@ -47,17 +35,25 @@ class SubmitTask(BaseModel):
 
 
 class SubmitAnswer(BaseModel):
-    id: int = Field(..., example=1)
+    data_id: int = Field(..., example=1)
     option_id: int = Field(..., example=9)
     customer_answer: str = Field(..., example="test")
 
 
 class SubmitRequest(BaseModel):
-    member_id: int = Field(..., example=1)
+    # member_id: int = Field(..., example=1)
+    project_id: int = Field(..., example=1)
     answers: List[SubmitAnswer] = Field(
         ...,
         example=[
-            {"id": 1, "option_id": 9, "customer_answer": "test_1"},
-            {"id": 2, "option_id": 10, "customer_answer": "test_"},
+            {"data_id": 1, "option_id": 9, "customer_answer": "test_1"},
+            {"data_id": 2, "option_id": 10, "customer_answer": "test_2"},
         ],
     )
+
+
+class SubmitKPI(BaseModel):
+    KPI_start_time: datetime = Field(..., example="2023-07-01T10:30:00")
+    KPI_end_time: datetime = Field(..., example="2023-07-01T11:45:00")
+    KPI_content: str = Field(..., example="test")
+    KPI_amount: int = Field(..., example=1)
