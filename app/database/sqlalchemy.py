@@ -31,5 +31,6 @@ from app.schemas.WL import (
 from app.schemas.DS import DataSuiteTask, DataSuiteWorkFlow  # noqa
 from app.schemas.User import User  # noqa
 from app.schemas.PM import MainProject, SubProject, Member  # noqa
+from app.schemas.EM import Expense  # noqa
 
 Base.metadata.create_all(engine)

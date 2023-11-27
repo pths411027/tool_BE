@@ -93,6 +93,7 @@ async def get_member_list(level: LevelEnum = Query(...)):
                 WLMember.member_name,
                 WLMember.member_photo,
                 WLMember.member_email,
+                WLMember.team_id,
                 func.coalesce(WLTeam.team_name, "Undefined").label("team_name"),
                 WLMember.member_level,
             )
@@ -116,6 +117,7 @@ async def get_member_list(level: LevelEnum = Query(...)):
                 "member_email": result.member_email,
                 "team_name": result.team_name,
                 "member_level": result.member_level,
+                "team_id": result.team_id,
             }
             for result in results
         ]
@@ -177,6 +179,19 @@ async def get_project_list(current_user=Depends(get_current_user)):
             WLMember.member_id == current_user["id"]
         )
 
+        complete_percentage_subquery = (
+            session.query(
+                WLFile.project_id.label("c_project_id"),
+                func.count(WLData.data_id).label("total_row"),
+                func.sum(case([(WLData.row_completed == True, 1)], else_=0)).label(
+                    "complete_row"
+                ),
+            )
+            .join(WLData, WLFile.file_id == WLData.file_id, isouter=True)
+            .group_by(WLFile.project_id)
+            .subquery()
+        )
+
         results = (
             session.query(
                 WLMainProject.project_id,
@@ -189,6 +204,8 @@ async def get_project_list(current_user=Depends(get_current_user)):
                 case([(WLMainProject.team_id.in_(team_id_), False)], else_=True).label(
                     "diabled"
                 ),
+                complete_percentage_subquery.c.total_row,
+                complete_percentage_subquery.c.complete_row,
             )
             .join(WLTeam, WLMainProject.team_id == WLTeam.team_id, isouter=True)
             .join(
@@ -198,6 +215,10 @@ async def get_project_list(current_user=Depends(get_current_user)):
                     WLMember.member_level == "Leader",
                 ),
                 isouter=True,
+            )
+            .outerjoin(
+                complete_percentage_subquery,
+                WLMainProject.project_id == complete_percentage_subquery.c.c_project_id,
             )
             .all()
         )
@@ -216,6 +237,11 @@ async def get_project_list(current_user=Depends(get_current_user)):
                 "team_name": result.team_name,
                 "leader_name": result.member_name,
                 "disabled": result.diabled,
+                "complete_percentage": (
+                    f"{result.complete_row}/{result.total_row}"
+                    if result.total_row
+                    else "No record"
+                ),
             }
             for result in results
         ]
@@ -367,11 +393,11 @@ def upload_task_file_xlsx(
             first_upload = False
 
 
-# TODO: add answer to the xlsx
 @work_load_router.get(
-    "/download-task-file-xlsx/{file_id}", status_code=status.HTTP_200_OK
+    "/download-task-file-xlsx/{file_id}/{answer_or_not}",
+    status_code=status.HTTP_200_OK,
 )
-async def download_task_file_xlsx(file_id: int):
+async def download_task_file_xlsx(file_id: int, answer_or_not: bool):
     with Session() as session:
         # get file info
         result_file = (
@@ -400,10 +426,17 @@ async def download_task_file_xlsx(file_id: int):
             .all()
         )
 
-        data = [i.row_data.split("|") + [i.option_name] for i in result_data]
-        df = pd.DataFrame(
-            data, columns=result_format.project_file_format.split("|") + ["complete"]
-        )
+        if answer_or_not:
+            data = [i.row_data.split("|") + [i.option_name] for i in result_data]
+            df = pd.DataFrame(
+                data,
+                columns=result_format.project_file_format.split("|") + ["complete"],
+            )
+        else:
+            data = [i.row_data.split("|") for i in result_data]
+            df = pd.DataFrame(
+                data, columns=result_format.project_file_format.split("|")
+            )
 
         output = BytesIO()
         with pd.ExcelWriter(output, engine="openpyxl") as writer:
@@ -696,6 +729,16 @@ async def onhold_task(project_id: int, current_user=Depends(get_current_user)):
     print(current_user)
 
     with Session() as session:
+        file_ = (
+            session.query(
+                WLFile.file_id,
+            )
+            .filter(WLFile.project_id == project_id)
+            .all()
+        )
+        print("go")
+        file_ids = [file.file_id for file in file_]
+        print(file_ids)
         results = (
             session.query(
                 WLData.data_id,
@@ -709,7 +752,10 @@ async def onhold_task(project_id: int, current_user=Depends(get_current_user)):
             .join(WLMember, WLData.row_member_id == WLMember.member_id)
             .filter(
                 and_(
-                    WLOption_Answer.option_revise.is_(True), WLData.row_member_id != -1
+                    WLOption_Answer.option_revise.is_(True),
+                    WLData.row_member_id != -1,
+                    WLOption_Answer.option_name != "",
+                    WLData.file_id.in_(file_ids),
                 )
             )
             .limit(10)
@@ -758,15 +804,6 @@ async def onhold_task(project_id: int, current_user=Depends(get_current_user)):
         print(Options)
 
     return {"taskFormat": result_format, "task": task_items, "option": Options}
-
-
-"""
-# TODO
-1. review log to show, BE give all info to FE, and FE will decide what to show by order
-2. KPI DB
-3. KPI API: get KPI, update KPI, formula, search KPI(by parameter), with download function, modify function  -> display red
-4. 
-"""
 
 
 @work_load_router.post("/record-KPI", status_code=status.HTTP_201_CREATED)
