@@ -14,7 +14,7 @@ openpyxl = "*"
 numpy = "*"
 bcrypt = "*"
 python-multipart = "*"
-
+inv = "*"
 
 [dev-packages]
 notebook = "*"
